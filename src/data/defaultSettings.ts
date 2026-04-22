@@ -1,0 +1,72 @@
+import { Settings } from '../types'
+
+export const defaultSettings: Settings = {
+  kidName: 'My Kid',
+  dailyGoal: 300,
+  weeklyGoal: 1500,
+  activityConfig: [
+    {
+      id: 'study',
+      name: 'Study',
+      category: 'positive',
+      inputType: 'time',
+      pointsPerUnit: 10,
+      unit: 'hours',
+      maxUnits: 3,
+    },
+    {
+      id: 'chores',
+      name: 'Chores',
+      category: 'positive',
+      inputType: 'completion',
+      pointsPerUnit: 20,
+    },
+    {
+      id: 'outdoor-play',
+      name: 'Outdoor Play',
+      category: 'positive',
+      inputType: 'time',
+      pointsPerUnit: 10,
+      unit: 'hours',
+      maxUnits: 2,
+    },
+    {
+      id: 'healthy-meal',
+      name: 'Healthy Meal',
+      category: 'positive',
+      inputType: 'completion',
+      pointsPerUnit: 15,
+    },
+    {
+      id: 'sleep',
+      name: 'Sleep',
+      category: 'positive',
+      inputType: 'time',
+      pointsPerUnit: 10,
+      unit: 'hours',
+      maxUnits: 10,
+    },
+    {
+      id: 'junk-food',
+      name: 'Junk Food',
+      category: 'negative',
+      inputType: 'completion',
+      pointsPerUnit: -20,
+    },
+    {
+      id: 'indoor-play',
+      name: 'Indoor Play (excess)',
+      category: 'negative',
+      inputType: 'time',
+      pointsPerUnit: -10,
+      unit: 'hours',
+    },
+    {
+      id: 'late-sleep',
+      name: 'Late Sleep',
+      category: 'negative',
+      inputType: 'completion',
+      pointsPerUnit: -15,
+    },
+  ],
+}

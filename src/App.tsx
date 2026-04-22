@@ -1,121 +1,114 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useEffect, useCallback } from 'react'
+import { Settings, ActivityLog } from './types'
+import { getSettings, saveSettings, getLogs } from './lib/db'
+import { defaultSettings } from './data/defaultSettings'
+import Header from './components/Header'
+import Dashboard from './components/Dashboard'
+import LogActivity from './components/LogActivity'
+import History from './components/History'
+import SettingsPanel from './components/Settings'
 
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+function getToday() {
+  return new Date().toISOString().slice(0, 10)
 }
 
-export default App
+function getWeekStart() {
+  const now = new Date()
+  const day = now.getDay()
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - ((day + 6) % 7))
+  return monday.toISOString().slice(0, 10)
+}
+
+export default function App() {
+  const [settings, setSettings] = useState<Settings | null>(null)
+  const [currentView, setCurrentView] = useState('dashboard')
+  const [todayLogs, setTodayLogs] = useState<ActivityLog[]>([])
+  const [weekLogs, setWeekLogs] = useState<ActivityLog[]>([])
+  const [loading, setLoading] = useState(true)
+
+  async function loadSettings() {
+    let s = await getSettings()
+    if (!s) {
+      await saveSettings(defaultSettings)
+      s = await getSettings()
+    }
+    setSettings(s ?? defaultSettings)
+  }
+
+  const loadLogs = useCallback(async () => {
+    const today = getToday()
+    const weekStart = getWeekStart()
+    const [tLogs, wLogs] = await Promise.all([
+      getLogs(today, today),
+      getLogs(weekStart, today),
+    ])
+    setTodayLogs(tLogs)
+    setWeekLogs(wLogs)
+  }, [])
+
+  useEffect(() => {
+    async function init() {
+      await loadSettings()
+      await loadLogs()
+      setLoading(false)
+    }
+    init()
+  }, [loadLogs])
+
+  function handleSettingsSaved(newSettings: Settings) {
+    setSettings(newSettings)
+  }
+
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: '#1a1a2e',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#fff',
+        fontSize: '1.2rem',
+      }}>
+        Loading KidPoints...
+      </div>
+    )
+  }
+
+  if (!settings) return null
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#1a1a2e', color: '#fff' }}>
+      <Header
+        kidName={settings.kidName}
+        currentView={currentView}
+        onNavigate={setCurrentView}
+      />
+      <main>
+        {currentView === 'dashboard' && (
+          <Dashboard
+            settings={settings}
+            todayLogs={todayLogs}
+            weekLogs={weekLogs}
+          />
+        )}
+        {currentView === 'log' && (
+          <LogActivity
+            settings={settings}
+            onLogged={loadLogs}
+          />
+        )}
+        {currentView === 'history' && (
+          <History onRefresh={loadLogs} />
+        )}
+        {currentView === 'settings' && (
+          <SettingsPanel
+            settings={settings}
+            onSaved={handleSettingsSaved}
+          />
+        )}
+      </main>
+    </div>
+  )
+}
