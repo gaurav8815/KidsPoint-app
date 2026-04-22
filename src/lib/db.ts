@@ -1,12 +1,16 @@
 import { supabase } from './supabase'
-import { Settings, ActivityLog } from '../types'
+import type { Settings, ActivityLog } from '../types'
 
 // ── Settings ──────────────────────────────────────────
 
 export async function getSettings(): Promise<Settings | null> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
   const { data, error } = await supabase
     .from('settings')
     .select('*')
+    .eq('user_id', user.id)
     .single()
 
   if (error || !data) return null
@@ -21,11 +25,15 @@ export async function getSettings(): Promise<Settings | null> {
 }
 
 export async function saveSettings(settings: Settings): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
   const payload = {
     kid_name: settings.kidName,
     daily_goal: settings.dailyGoal,
     weekly_goal: settings.weeklyGoal,
     activity_config: settings.activityConfig,
+    user_id: user.id,
   }
 
   if (settings.id) {
@@ -41,9 +49,13 @@ export async function getLogs(
   from: string,
   to: string
 ): Promise<ActivityLog[]> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
   const { data, error } = await supabase
     .from('activity_logs')
     .select('*')
+    .eq('user_id', user.id)
     .gte('date', from)
     .lte('date', to)
     .order('logged_at', { ascending: false })
@@ -64,6 +76,9 @@ export async function getLogs(
 }
 
 export async function saveLog(log: ActivityLog): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
   await supabase.from('activity_logs').insert({
     date: log.date,
     activity_type: log.activityType,
@@ -72,6 +87,7 @@ export async function saveLog(log: ActivityLog): Promise<void> {
     unit: log.unit,
     points: log.points,
     note: log.note,
+    user_id: user.id,
   })
 }
 
