@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Settings, ActivityLog } from './types'
+import type { Settings, ActivityLog } from './types'
 import { getSettings, saveSettings, getLogs } from './lib/db'
 import { defaultSettings } from './data/defaultSettings'
+import { supabase } from './lib/supabase'
 import Header from './components/Header'
 import Dashboard from './components/Dashboard'
 import LogActivity from './components/LogActivity'
 import History from './components/History'
 import SettingsPanel from './components/Settings'
+import Auth from './components/Auth'
 
 function getToday() {
   return new Date().toISOString().slice(0, 10)
@@ -21,6 +23,7 @@ function getWeekStart() {
 }
 
 export default function App() {
+  const [session, setSession] = useState<any>(null)
   const [settings, setSettings] = useState<Settings | null>(null)
   const [currentView, setCurrentView] = useState('dashboard')
   const [todayLogs, setTodayLogs] = useState<ActivityLog[]>([])
@@ -48,13 +51,38 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setLoading(false)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session)
+      }
+    )
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    if (!session) return
     async function init() {
+      setLoading(true)
       await loadSettings()
       await loadLogs()
       setLoading(false)
     }
     init()
-  }, [loadLogs])
+  }, [session, loadLogs])
+
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    setSettings(null)
+    setTodayLogs([])
+    setWeekLogs([])
+    setCurrentView('dashboard')
+  }
 
   function handleSettingsSaved(newSettings: Settings) {
     setSettings(newSettings)
@@ -76,6 +104,10 @@ export default function App() {
     )
   }
 
+  if (!session) {
+    return <Auth />
+  }
+
   if (!settings) return null
 
   return (
@@ -84,6 +116,7 @@ export default function App() {
         kidName={settings.kidName}
         currentView={currentView}
         onNavigate={setCurrentView}
+        onSignOut={handleSignOut}
       />
       <main>
         {currentView === 'dashboard' && (
