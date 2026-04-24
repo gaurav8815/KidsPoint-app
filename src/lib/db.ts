@@ -94,3 +94,13 @@ export async function saveLog(log: ActivityLog): Promise<void> {
 export async function deleteLog(id: string): Promise<void> {
   await supabase.from('activity_logs').delete().eq('id', id)
 }
+
+export async function deleteActivityLogs(activityType: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  await supabase.rpc('delete_activity_logs', {
+    p_user_id: user.id,
+    p_activity_type: activityType,
+  })
+}
