@@ -2,7 +2,6 @@ import { useState } from 'react'
 import type { Settings, ActivityConfig } from '../types'
 import { saveSettings } from '../lib/db'
 import { deleteActivityLogs } from '../lib/db'
-import { supabase } from '../lib/supabase'
 
 interface SettingsProps {
   settings: Settings
