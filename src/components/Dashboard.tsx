@@ -49,7 +49,7 @@ export default function Dashboard({ settings, todayLogs, weekLogs }: DashboardPr
       {/* Score cards */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
         {[
-          { label: "Today's Points", value: todayPts, color: '#e94560' },
+          { label: "Today's Points", value: todayPts, color: '#ffffff' },
           { label: 'This Week', value: weekPts, color: '#4ecca3' },
         ].map((card) => (
           <div key={card.label} style={{
